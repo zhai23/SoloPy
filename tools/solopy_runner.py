@@ -20,6 +20,8 @@ def main() -> int:
         return 2
 
     cmd = [str(python_exe), *sys.argv[1:]]
+    # Fully transparent: behave exactly like system Python
+    # All signals, exceptions, and outputs are passed through
     completed = subprocess.run(cmd)
     return completed.returncode
 
