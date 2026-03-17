@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+.build/
 develop-eggs/
 dist/
 downloads/
@@ -205,3 +206,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+/tests
+# Keep get-pip.py in repo but make it optional
+# Download from https://bootstrap.pypa.io/get-pip.py
+# !tools/get-pip.py

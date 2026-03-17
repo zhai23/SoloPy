@@ -1,0 +1,5 @@
+# Build machine dependencies
+# Install these on your build machine to run build_solopy.py
+
+# PyInstaller for packaging
+pyinstaller>=6.0
