@@ -4,13 +4,16 @@ setlocal EnableExtensions
 REM ========== SoloPy Build Configuration ==========
 REM Python version used for both build environment and bundled runtime
 REM Supports exact versions like 3.12.8 or short versions like 3.12
-set "PYTHON_VERSION=3.9"
+set "PYTHON_VERSION=3.12"
 
 REM Target architecture: amd64, win32, or arm64
 set "PYTHON_ARCH=amd64"
 
 REM Output executable name
 set "EXE_NAME=solopy"
+
+REM Executable icon file (.ico)
+set "ICON_FILE=tools\solopy.ico"
 
 REM Mirror display name
 set "MIRROR_LABEL=Tsinghua"
@@ -40,12 +43,15 @@ set "GET_PIP=%TOOLS_DIR%\get-pip.py"
 set "RUNNER=%TOOLS_DIR%\solopy_runner.py"
 set "BUILD_PY=%BUILD_PY_HOME%\python.exe"
 set "RUNTIME_PY=%RUNTIME_PY_HOME%\python.exe"
+set "ICON_PATH=%ICON_FILE%"
+if /I not "%ICON_PATH:~1,1%"==":" set "ICON_PATH=%ROOT_DIR%%ICON_FILE%"
 where powershell >nul 2>nul
 if errorlevel 1 set "FAIL_MSG=PowerShell not found. Windows PowerShell is required." & goto :fail
 
 if not exist "%RUNNER%" set "FAIL_MSG=Missing launcher: %RUNNER%" & goto :fail
 if not exist "%GET_PIP%" set "FAIL_MSG=Missing tools\get-pip.py" & goto :fail
 if not exist "%RUNTIME_REQ%" set "FAIL_MSG=Missing requirements.txt" & goto :fail
+if not exist "%ICON_PATH%" set "FAIL_MSG=Missing icon file: %ICON_FILE%" & goto :fail
 
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
@@ -62,6 +68,7 @@ echo ========================================
 echo Python version:       %PYTHON_VERSION% (%PYTHON_ARCH%)
 if /I not "%RESOLVED_PYTHON_VERSION%"=="%PYTHON_VERSION%" echo Resolved version:     %RESOLVED_PYTHON_VERSION%
 echo Output exe:           dist\%EXE_NAME%.exe
+echo Icon file:            %ICON_PATH%
 echo Mirror source:        %MIRROR_LABEL%
 echo ========================================
 echo.
@@ -158,7 +165,7 @@ exit /b 0
 
 :build_exe
 echo [build] PyInstaller
-"%BUILD_PY%" -m PyInstaller --noconfirm --clean --onefile --name "%EXE_NAME%" --distpath "%DIST_DIR%" --workpath "%BUILD_DIR%\pyi-work" --specpath "%BUILD_DIR%\pyi-spec" --add-data "%RUNTIME_PY_HOME%;py" "%RUNNER%"
+"%BUILD_PY%" -m PyInstaller --noconfirm --clean --onefile --name "%EXE_NAME%" --icon "%ICON_PATH%" --distpath "%DIST_DIR%" --workpath "%BUILD_DIR%\pyi-work" --specpath "%BUILD_DIR%\pyi-spec" --add-data "%RUNTIME_PY_HOME%;py" "%RUNNER%"
 if errorlevel 1 set "FAIL_MSG=PyInstaller build failed" & goto :fail
 exit /b 0
 
