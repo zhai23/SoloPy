@@ -8,6 +8,7 @@
 - 构建时会先下载一个用于打包的嵌入式 Python 到 `.build/py-build`
 - 再下载一个最终随 `solopy.exe` 分发的嵌入式 Python 到 `.build/py-runtime`
 - `pip`、`PyInstaller`、业务依赖都由下载下来的嵌入式 Python 自己安装
+- 每次构建前会清理 `.build/` 中除嵌入式 Python zip 以外的中间文件
 
 ## 目录结构
 
@@ -87,6 +88,6 @@ dist\solopy.exe tests\web_demo\smoke_web.py
 ## 注意事项
 
 - `tools/get-pip.py` 需要你提前放好
-- `.build/` 可以保留，后续构建会复用已下载的 zip
+- `.build/` 中的嵌入式 Python zip 会被保留复用，其余中间文件会在每次构建前自动清理
 - 如果依赖带 C 扩展，请确保目标架构与构建架构一致
 - 当前 `solopy_runner.py` 保持与系统 Python 尽量一致的透明行为

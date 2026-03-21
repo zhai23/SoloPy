@@ -3,7 +3,7 @@ setlocal EnableExtensions
 
 REM ========== SoloPy Build Configuration ==========
 REM Python version used for both build environment and bundled runtime
-set "PYTHON_VERSION=3.12.8"
+set "PYTHON_VERSION=3.11.9"
 
 REM Target architecture: amd64, win32, or arm64
 set "PYTHON_ARCH=amd64"
@@ -82,6 +82,12 @@ echo [test] dist\%EXE_NAME%.exe -V
 if errorlevel 1 set "FAIL_MSG=Smoke test failed" & goto :fail
 goto :eof
 
+:clean_build_dir
+echo [clean] %BUILD_DIR% (keep embedded Python zip cache)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path '%BUILD_DIR%') { Get-ChildItem -LiteralPath '%BUILD_DIR%' -Force | Where-Object { $_.Name -notlike 'python-*-embed-*.zip' } | Remove-Item -Recurse -Force }"
+if errorlevel 1 set "FAIL_MSG=Failed to clean %BUILD_DIR%" & goto :fail
+goto :eof
+
 :fail
 echo.
 echo ========================================
@@ -141,6 +147,8 @@ if not exist "%RUNTIME_REQ%" set "FAIL_MSG=Missing requirements.txt" & goto :fai
 
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
+
+call :clean_build_dir
 
 call :download_embed "%PYTHON_VERSION%" "%BUILD_ZIP%"
 call :extract_embed "%BUILD_ZIP%" "%BUILD_PY_HOME%"
