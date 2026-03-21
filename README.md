@@ -44,7 +44,9 @@ curl -L -o tools/get-pip.py https://bootstrap.pypa.io/get-pip.py
 set "PYTHON_VERSION=3.12"
 set "PYTHON_ARCH=amd64"
 set "EXE_NAME=solopy"
-set "USE_TSINGHUA=1"
+set "MIRROR_LABEL=Tsinghua"
+set "PYTHON_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/python"
+set "PYPI_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple"
 ```
 
 3. 修改 `requirements.txt`
@@ -62,7 +64,9 @@ build.bat
 - `PYTHON_VERSION`：同时用于构建环境和最终打包运行时的 Python 版本；可写完整版本如 `3.12.8`，也可写主次版本如 `3.12`，构建时会自动联网解析到当前可下载的最新补丁版本
 - `PYTHON_ARCH`：`amd64` / `win32` / `arm64`
 - `EXE_NAME`：输出 exe 名称
-- `USE_TSINGHUA`：`1` 使用清华镜像，`0` 使用官方源
+- `MIRROR_LABEL`：构建日志里显示的镜像名称
+- `PYTHON_MIRROR`：嵌入式 Python 下载地址前缀
+- `PYPI_INDEX`：`get-pip` 和 `pip install` 使用的索引地址
 
 说明：即使系统完全没装 Python，也可以构建；前提是机器有 PowerShell，并且能访问你配置的下载源。
 

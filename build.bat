@@ -4,7 +4,7 @@ setlocal EnableExtensions
 REM ========== SoloPy Build Configuration ==========
 REM Python version used for both build environment and bundled runtime
 REM Supports exact versions like 3.12.8 or short versions like 3.12
-set "PYTHON_VERSION=3.12"
+set "PYTHON_VERSION=3.9"
 
 REM Target architecture: amd64, win32, or arm64
 set "PYTHON_ARCH=amd64"
@@ -12,8 +12,14 @@ set "PYTHON_ARCH=amd64"
 REM Output executable name
 set "EXE_NAME=solopy"
 
-REM Use Tsinghua mirror (1=Yes, 0=Official)
-set "USE_TSINGHUA=1"
+REM Mirror display name
+set "MIRROR_LABEL=Tsinghua"
+
+REM Embedded Python download mirror
+set "PYTHON_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/python"
+
+REM PyPI index for pip/get-pip
+set "PYPI_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple"
 REM ================================================
 
 set "EXIT_CODE=0"
@@ -34,15 +40,6 @@ set "GET_PIP=%TOOLS_DIR%\get-pip.py"
 set "RUNNER=%TOOLS_DIR%\solopy_runner.py"
 set "BUILD_PY=%BUILD_PY_HOME%\python.exe"
 set "RUNTIME_PY=%RUNTIME_PY_HOME%\python.exe"
-set "MIRROR_LABEL=Official"
-set "PYTHON_MIRROR=https://www.python.org/ftp/python"
-set "PYPI_INDEX=https://pypi.org/simple"
-if "%USE_TSINGHUA%"=="1" (
-    set "MIRROR_LABEL=Tsinghua"
-    set "PYTHON_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/python"
-    set "PYPI_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple"
-)
-
 where powershell >nul 2>nul
 if errorlevel 1 set "FAIL_MSG=PowerShell not found. Windows PowerShell is required." & goto :fail
 
