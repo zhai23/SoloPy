@@ -1,5 +1,7 @@
 # SoloPy
 
+![](solopy_banner0.png)
+生成自定义单文件 `Python 解释器`
 将 Python 解释器和依赖打包为单一 `solopy.exe`，并在目标 Windows 机器上直接运行外部 `.py` 脚本，无需预装 Python。
 
 ## 现在的构建方式
@@ -34,8 +36,8 @@ SoloPy/
 
 1. 准备 `tools/get-pip.py`
 
-```powershell
-curl -L -o tools/get-pip.py https://bootstrap.pypa.io/get-pip.py
+```shell
+https://bootstrap.pypa.io/get-pip.py
 ```
 
 2. 按需修改 `build.bat` 顶部配置
@@ -75,26 +77,14 @@ build.bat
 例如：
 
 - `3.12` -> 自动解析成当前可下载的最新 `3.12.x`
-- `3.11` -> 自动解析成当前可下载的最新 `3.11.x`
 - `3.12.8` -> 直接使用该精确版本
 
 ## 使用方式
 
 ```powershell
-solopy.exe script.py
-solopy.exe -m uvicorn app:app --host 0.0.0.0 --port 8000
 solopy.exe -c "print('hello')"
 solopy.exe -V
-```
-
-## 测试项目
-
-仓库内提供了 `tests/web_demo/` 用于验证外部脚本运行。
-
-```powershell
-copy tests\web_demo\.env.example tests\web_demo\.env
-dist\solopy.exe tests\web_demo\dependency_check.py
-dist\solopy.exe tests\web_demo\smoke_web.py
+solopy.exe main.py
 ```
 
 ## 注意事项
