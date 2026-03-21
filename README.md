@@ -41,7 +41,7 @@ curl -L -o tools/get-pip.py https://bootstrap.pypa.io/get-pip.py
 2. 按需修改 `build.bat` 顶部配置
 
 ```bat
-set "PYTHON_VERSION=3.12.8"
+set "PYTHON_VERSION=3.12"
 set "PYTHON_ARCH=amd64"
 set "EXE_NAME=solopy"
 set "USE_TSINGHUA=1"
@@ -59,12 +59,18 @@ build.bat
 
 ## 配置说明
 
-- `PYTHON_VERSION`：同时用于构建环境和最终打包运行时的 Python 版本
+- `PYTHON_VERSION`：同时用于构建环境和最终打包运行时的 Python 版本；可写完整版本如 `3.12.8`，也可写主次版本如 `3.12`，构建时会自动联网解析到当前可下载的最新补丁版本
 - `PYTHON_ARCH`：`amd64` / `win32` / `arm64`
 - `EXE_NAME`：输出 exe 名称
 - `USE_TSINGHUA`：`1` 使用清华镜像，`0` 使用官方源
 
 说明：即使系统完全没装 Python，也可以构建；前提是机器有 PowerShell，并且能访问你配置的下载源。
+
+例如：
+
+- `3.12` -> 自动解析成当前可下载的最新 `3.12.x`
+- `3.11` -> 自动解析成当前可下载的最新 `3.11.x`
+- `3.12.8` -> 直接使用该精确版本
 
 ## 使用方式
 
