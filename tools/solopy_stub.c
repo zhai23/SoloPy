@@ -17,11 +17,19 @@
  *     extract it (Unicode-safe) into a temp dir, atomically rename into place,
  *     then exec python.exe.
  *
- * Transparency goals (behave like the bundled python.exe):
+ * Two build variants share this single source (selected at compile time):
+ *   - Console variant (default): behaves exactly like python.exe. Inherits the
+ *     console/stdio, forwards Ctrl+C to the child, waits, and propagates the
+ *     child's exit code. Produces solopy.exe.
+ *   - Windowed variant (define SOLOPY_WINDOWED): behaves like pythonw.exe.
+ *     Built as a GUI-subsystem exe so NO console window ever appears. It
+ *     launches the bundled pythonw.exe fire-and-forget (does not wait) so the
+ *     GUI runs independently, and reports fatal errors via a message box.
+ *     Produces solopyw.exe.
+ *
+ * Transparency goals (behave like the bundled interpreter):
  *   - argv is forwarded verbatim via GetCommandLineW (original quoting kept).
- *   - stdio / console handles are inherited (pipes, redirection, TTY all work).
- *   - Ctrl+C / Ctrl+Break are handled by the child; the stub ignores them and
- *     waits, then propagates the child's exact exit code.
+ *   - Console variant inherits stdio (pipes, redirection, TTY all work).
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -37,16 +45,30 @@
 #define MAGIC_LEN      8
 #define BUILDID_LEN    16
 
+/* Interpreter launched from the extracted runtime. The windowed variant uses
+ * pythonw.exe (GUI subsystem, no console); the console variant uses python.exe.
+ * Both live in the same extracted runtime, so the two exes can share one cache. */
+#ifdef SOLOPY_WINDOWED
+#  define INTERP_EXE L"pythonw.exe"
+#else
+#  define INTERP_EXE L"python.exe"
+#endif
+
 /* ---- tiny helpers -------------------------------------------------------- */
 
 static void die(const wchar_t *msg)
 {
+#ifdef SOLOPY_WINDOWED
+    /* No console in the windowed variant: surface errors via a message box. */
+    MessageBoxW(NULL, msg, L"SoloPy", MB_OK | MB_ICONERROR);
+#else
     HANDLE h = GetStdHandle(STD_ERROR_HANDLE);
     DWORD written = 0;
     if (h && h != INVALID_HANDLE_VALUE) {
         WriteConsoleW(h, msg, lstrlenW(msg), &written, NULL);
         WriteConsoleW(h, L"\r\n", 2, &written, NULL);
     }
+#endif
     ExitProcess(2);
 }
 
@@ -247,6 +269,7 @@ static wchar_t *args_tail(wchar_t *cmdline)
     return p;
 }
 
+#ifndef SOLOPY_WINDOWED
 static BOOL WINAPI ctrl_handler(DWORD type)
 {
     (void)type;
@@ -255,6 +278,7 @@ static BOOL WINAPI ctrl_handler(DWORD type)
        waiting and then propagate the child's exit code. */
     return TRUE;
 }
+#endif
 
 int main(void)
 {
@@ -297,7 +321,7 @@ int main(void)
     xfree(sepB);
 
     wchar_t *pySep = wjoin(cacheDir, L"\\");
-    wchar_t *pythonExe = wjoin(pySep, L"python.exe");
+    wchar_t *pythonExe = wjoin(pySep, INTERP_EXE);
     xfree(pySep);
 
     /* --- cold path: extract once --- */
@@ -353,14 +377,32 @@ int main(void)
     xfree(quotedPy);
     xfree(withSpace);
 
-    /* --- launch, inherit console/stdio, wait, propagate exit code --- */
-    SetConsoleCtrlHandler(ctrl_handler, TRUE);
-
+    /* --- launch --- */
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     memset(&pi, 0, sizeof(pi));
+
+#ifdef SOLOPY_WINDOWED
+    /* Windowed: no console at all. pythonw.exe is a GUI-subsystem program, so it
+     * never allocates a console; CREATE_NO_WINDOW is added as belt-and-suspenders.
+     * Fire-and-forget: do not wait so the GUI runs independently and this
+     * launcher exits immediately. */
+    BOOL ok = CreateProcessW(pythonExe, cmdline, NULL, NULL, FALSE,
+                             CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+    if (!ok) die(L"[SoloPy] failed to start interpreter");
+
+    xfree(pythonExe);
+    xfree(cmdline);
+
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return 0;
+#else
+    /* Console: inherit console/stdio, forward Ctrl+C to the child, wait, and
+     * propagate the child's exact exit code. */
+    SetConsoleCtrlHandler(ctrl_handler, TRUE);
 
     BOOL ok = CreateProcessW(pythonExe, cmdline, NULL, NULL, TRUE,
                              0, NULL, NULL, &si, &pi);
@@ -375,4 +417,5 @@ int main(void)
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
     return (int)code;
+#endif
 }

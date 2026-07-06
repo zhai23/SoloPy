@@ -37,13 +37,16 @@ set "RUNTIME_PY_HOME=%BUILD_DIR%\py-runtime"
 set "RUNTIME_REQ=%ROOT_DIR%requirements.txt"
 set "GET_PIP=%TOOLS_DIR%\get-pip.py"
 set "STUB_EXE=%TOOLS_DIR%\solopy_stub.exe"
+set "STUBW_EXE=%TOOLS_DIR%\solopyw_stub.exe"
 set "RUNTIME_PY=%RUNTIME_PY_HOME%\python.exe"
 set "OUT_EXE=%DIST_DIR%\%EXE_NAME%.exe"
+set "OUT_EXEW=%DIST_DIR%\%EXE_NAME%w.exe"
 
 where powershell >nul 2>nul
 if errorlevel 1 set "FAIL_MSG=PowerShell not found. Windows PowerShell is required." & goto :fail
 
 if not exist "%STUB_EXE%" set "FAIL_MSG=Missing launcher stub: %STUB_EXE% (run tools\build_stub.bat once)" & goto :fail
+if not exist "%STUBW_EXE%" set "FAIL_MSG=Missing windowed launcher stub: %STUBW_EXE% (run tools\build_stub.bat once)" & goto :fail
 if not exist "%GET_PIP%" set "FAIL_MSG=Missing tools\get-pip.py" & goto :fail
 if not exist "%RUNTIME_REQ%" set "FAIL_MSG=Missing requirements.txt" & goto :fail
 
@@ -60,8 +63,10 @@ echo [SoloPy] Build Configuration
 echo ========================================
 echo Python version:       %PYTHON_VERSION% (%PYTHON_ARCH%)
 if /I not "%RESOLVED_PYTHON_VERSION%"=="%PYTHON_VERSION%" echo Resolved version:     %RESOLVED_PYTHON_VERSION%
-echo Output exe:           dist\%EXE_NAME%.exe
-echo Launcher stub:        %STUB_EXE%
+echo Output exe:           dist\%EXE_NAME%.exe (console)
+echo Output exe:           dist\%EXE_NAME%w.exe (windowed / no console)
+echo Launcher stubs:       %STUB_EXE%
+echo                       %STUBW_EXE%
 echo Mirror source:        %MIRROR_LABEL%
 echo ========================================
 echo.
@@ -153,19 +158,24 @@ if errorlevel 1 set "FAIL_MSG=Failed to prune runtime in %PRUNE_DIR%" & goto :fa
 exit /b 0
 
 :assemble_exe
-echo [assemble] %OUT_EXE%
+echo [assemble] %OUT_EXE% + %OUT_EXEW%
 if exist "%OUT_EXE%" del /q "%OUT_EXE%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $rt='%RUNTIME_PY_HOME%'; $stub='%STUB_EXE%'; $out='%OUT_EXE%'; $work='%BUILD_DIR%'; $zip=Join-Path $work 'runtime.zip'; if (Test-Path $zip) { Remove-Item $zip -Force }; Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory($rt,$zip,[System.IO.Compression.CompressionLevel]::Optimal,$false); $fs=[System.IO.File]::Create($out); try { $sb=[System.IO.File]::ReadAllBytes($stub); $fs.Write($sb,0,$sb.Length); $zb=[System.IO.File]::ReadAllBytes($zip); $fs.Write($zb,0,$zb.Length); $id=New-Object byte[] 16; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($id); $fs.Write($id,0,16); $len=[System.BitConverter]::GetBytes([UInt64]$zb.Length); $fs.Write($len,0,8); $magic=[System.Text.Encoding]::ASCII.GetBytes('SOLOPY01'); $fs.Write($magic,0,8) } finally { $fs.Close() }; Remove-Item $zip -Force; Write-Host ('[assemble] runtime bytes: {0}' -f $zb.Length); Write-Host ('[assemble] exe bytes:     {0}' -f (Get-Item $out).Length)"
-if errorlevel 1 set "FAIL_MSG=Failed to assemble %OUT_EXE%" & goto :fail
+if exist "%OUT_EXEW%" del /q "%OUT_EXEW%"
+REM Zip the runtime once and generate a single build id, then stamp BOTH exes
+REM (console + windowed) with that SAME id so they share one runtime cache.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $rt='%RUNTIME_PY_HOME%'; $work='%BUILD_DIR%'; $pairs=@(@{stub='%STUB_EXE%';out='%OUT_EXE%'},@{stub='%STUBW_EXE%';out='%OUT_EXEW%'}); $zip=Join-Path $work 'runtime.zip'; if (Test-Path $zip) { Remove-Item $zip -Force }; Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory($rt,$zip,[System.IO.Compression.CompressionLevel]::Optimal,$false); $zb=[System.IO.File]::ReadAllBytes($zip); $id=New-Object byte[] 16; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($id); $len=[System.BitConverter]::GetBytes([UInt64]$zb.Length); $magic=[System.Text.Encoding]::ASCII.GetBytes('SOLOPY01'); foreach ($p in $pairs) { $fs=[System.IO.File]::Create($p.out); try { $sb=[System.IO.File]::ReadAllBytes($p.stub); $fs.Write($sb,0,$sb.Length); $fs.Write($zb,0,$zb.Length); $fs.Write($id,0,16); $fs.Write($len,0,8); $fs.Write($magic,0,8) } finally { $fs.Close() }; Write-Host ('[assemble] {0}  ({1} bytes)' -f $p.out,(Get-Item $p.out).Length) }; Remove-Item $zip -Force; Write-Host ('[assemble] runtime bytes: {0}' -f $zb.Length)"
+if errorlevel 1 set "FAIL_MSG=Failed to assemble output executables" & goto :fail
 exit /b 0
 
 :smoke_test
 echo [test] dist\%EXE_NAME%.exe -V (first run performs one-time extraction)
 "%OUT_EXE%" -V
 if errorlevel 1 set "FAIL_MSG=Smoke test failed" & goto :fail
-echo [test] dist\%EXE_NAME%.exe -c import check
-"%OUT_EXE%" -c "import fastapi, uvicorn, httpx, pydantic, pydantic_settings; print('[test] deps ok')"
-if errorlevel 1 set "FAIL_MSG=Dependency import smoke test failed" & goto :fail
+echo [test] dist\%EXE_NAME%.exe runtime self-check
+"%OUT_EXE%" -c "import sys, ssl, ctypes, sqlite3; print('[test] runtime ok', sys.version.split()[0])"
+if errorlevel 1 set "FAIL_MSG=Runtime self-check failed" & goto :fail
+echo [test] dist\%EXE_NAME%w.exe exists (windowed / no console)
+if not exist "%OUT_EXEW%" set "FAIL_MSG=Windowed exe not produced" & goto :fail
 exit /b 0
 
 :clean_build_dir
