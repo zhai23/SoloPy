@@ -163,7 +163,10 @@ if exist "%OUT_EXE%" del /q "%OUT_EXE%"
 if exist "%OUT_EXEW%" del /q "%OUT_EXEW%"
 REM Zip the runtime once and generate a single build id, then stamp BOTH exes
 REM (console + windowed) with that SAME id so they share one runtime cache.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $rt='%RUNTIME_PY_HOME%'; $work='%BUILD_DIR%'; $pairs=@(@{stub='%STUB_EXE%';out='%OUT_EXE%'},@{stub='%STUBW_EXE%';out='%OUT_EXEW%'}); $zip=Join-Path $work 'runtime.zip'; if (Test-Path $zip) { Remove-Item $zip -Force }; Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory($rt,$zip,[System.IO.Compression.CompressionLevel]::Optimal,$false); $zb=[System.IO.File]::ReadAllBytes($zip); $id=New-Object byte[] 16; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($id); $len=[System.BitConverter]::GetBytes([UInt64]$zb.Length); $magic=[System.Text.Encoding]::ASCII.GetBytes('SOLOPY01'); foreach ($p in $pairs) { $fs=[System.IO.File]::Create($p.out); try { $sb=[System.IO.File]::ReadAllBytes($p.stub); $fs.Write($sb,0,$sb.Length); $fs.Write($zb,0,$zb.Length); $fs.Write($id,0,16); $fs.Write($len,0,8); $fs.Write($magic,0,8) } finally { $fs.Close() }; Write-Host ('[assemble] {0}  ({1} bytes)' -f $p.out,(Get-Item $p.out).Length) }; Remove-Item $zip -Force; Write-Host ('[assemble] runtime bytes: {0}' -f $zb.Length)"
+REM The zip is authored with spec-compliant forward-slash separators (see
+REM tools\make_runtime_zip.ps1) so the miniz extractor in the launcher stub
+REM correctly recognizes directory entries during first-run extraction.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TOOLS_DIR%\make_runtime_zip.ps1" -Runtime "%RUNTIME_PY_HOME%" -WorkDir "%BUILD_DIR%" -Pairs "%STUB_EXE%=%OUT_EXE%;%STUBW_EXE%=%OUT_EXEW%"
 if errorlevel 1 set "FAIL_MSG=Failed to assemble output executables" & goto :fail
 exit /b 0
 

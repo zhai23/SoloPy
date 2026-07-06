@@ -195,7 +195,19 @@ static void extract_zip(const void *zip, size_t zip_len, const wchar_t *destRoot
         xfree(sep);
         xfree(rel);
 
-        if (mz_zip_reader_is_file_a_directory(&za, i)) {
+        /* Treat as a directory if miniz recognizes it, OR the (normalized)
+         * name ends in a path separator. Some zip writers -- notably .NET's
+         * ZipFile.CreateFromDirectory on Windows -- store directory entries
+         * with a trailing backslash, which miniz (per the ZIP spec's
+         * forward-slash rule) does not flag as a directory. Detecting the
+         * trailing separator ourselves avoids passing a path with a trailing
+         * '\' to CreateFileW (which fails with ERROR_PATH_NOT_FOUND). */
+        size_t full_len = lstrlenW(full);
+        BOOL is_dir = mz_zip_reader_is_file_a_directory(&za, i) ||
+                      (full_len > 0 &&
+                       (full[full_len - 1] == L'\\' || full[full_len - 1] == L'/'));
+
+        if (is_dir) {
             ensure_dirs(full);
             xfree(full);
             continue;
