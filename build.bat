@@ -5,17 +5,12 @@ set "NOPAUSE=0"
 :parse
 if "%~1"=="" goto :run
 if /I "%~1"=="--no-pause" goto :no_pause
-if /I "%~1"=="--skip-tests" goto :skip_tests
 set "ARGS=%ARGS% %1"
-shift
+shift /1
 goto :parse
 :no_pause
 set "NOPAUSE=1"
-shift
-goto :parse
-:skip_tests
-set "ARGS=%ARGS% -SkipTests"
-shift
+shift /1
 goto :parse
 :run
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0build.ps1" %ARGS%

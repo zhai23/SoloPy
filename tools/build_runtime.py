@@ -1,4 +1,4 @@
-"""Build in a fresh staging directory; publish only after both launchers pass tests."""
+"""Build and publish both launchers in a fresh staging directory."""
 from __future__ import annotations
 
 import argparse
@@ -24,7 +24,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", type=Path, required=True)
     parser.add_argument("--index-url", required=True)
-    parser.add_argument("--skip-tests", action="store_true")
     args = parser.parse_args()
     runtime = args.runtime.resolve()
     stage = runtime.parent
@@ -81,8 +80,6 @@ def build_runtime(args, runtime, stage, lock, lock_meta, report):
     console, gui = outputs / "solopy.exe", outputs / "solopyw.exe"
     info = make_bundle(runtime, stage, [(ROOT / "tools/solopy_stub.exe", console),
                                       (ROOT / "tools/solopyw_stub.exe", gui)])
-    if not args.skip_tests:
-        run(python, ROOT / "tests/test_launchers.py", "--console", console, "--gui", gui)
     info.update(provenance)
     info["executables"] = {p.name: sha256(p) for p in (console, gui)}
     (outputs / "build-info.json").write_text(json.dumps(info, indent=2) + "\n", encoding="utf-8")

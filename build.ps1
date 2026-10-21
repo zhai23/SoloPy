@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('amd64')][string]$Architecture = 'amd64',
-    [string]$IndexUrl = 'https://pypi.org/simple',
-    [switch]$SkipTests
+    [string]$IndexUrl = 'https://pypi.org/simple'
 )
 $ErrorActionPreference = 'Stop'
 # A PowerShell 7 parent can pass its module directories through cmd.exe.
@@ -49,7 +48,6 @@ Copy-Item -LiteralPath (Join-Path $root 'tools\python_host.exe') -Destination (J
 Copy-Item -LiteralPath (Join-Path $root 'tools\pythonw_host.exe') -Destination (Join-Path $runtime 'pythonw.exe') -Force
 $python = Join-Path $runtime 'python.exe'
 $args = @((Join-Path $root 'tools\build_runtime.py'), '--runtime', $runtime, '--index-url', $IndexUrl)
-if ($SkipTests) { $args += '--skip-tests' }
 & $python @args
 if ($LASTEXITCODE) { throw "Build failed (exit $LASTEXITCODE). Diagnostics remain in $stage" }
 Write-Host '[SoloPy] Build SUCCESS: dist\solopy.exe and dist\solopyw.exe'

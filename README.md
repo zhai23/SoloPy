@@ -18,6 +18,8 @@
 
 产物位于 `dist/`：`solopy.exe`、`solopyw.exe`、记录运行时摘要与包版本的 `build-info.json`。
 
+构建不执行测试，也不依赖 `tests/` 目录。拷贝项目用于构建时，只需保留 `build.bat`、`build.ps1`、`requirements.txt` 和完整的 `tools/` 目录；需要测试时再拷贝 `tests/` 并手动运行。
+
 修改 `requirements.txt` 后直接重新构建：
 
 ```powershell
@@ -63,14 +65,14 @@ GUI 自动自检会创建隐藏窗口，通过真实按钮消息触发操作，�
 
 `solopyw.exe` 异步启动，因此调用返回不代表 GUI 已完成；检查报告文件中的 `ok`，或使用下面的回归测试统一等待和判断结果。
 
-## 自动回归与性能测量
+## 手动运行回归与性能测量
 
 ```powershell
 .\dist\solopy.exe .\tests\test_launchers.py
 .\dist\solopy.exe .\tests\benchmark_startup.py --runs 20
 ```
 
-默认构建在独立缓存中自动执行回归，全部通过后才发布产物。覆盖：
+这些脚本按需手动运行，不参与构建。回归测试使用独立缓存，覆盖：
 
 - 并发首次启动、console/GUI 共用缓存及 PE 架构/子系统。
 - 两个示例工具、真实 GUI 控件回调、GUI 无控制台。
@@ -84,8 +86,6 @@ GUI 自动自检会创建隐藏窗口，通过真实按钮消息触发操作，�
 测试和性能测量的缓存、报告保存在 `.build/verify-*`、`.build/benchmark-*`，不会改动用户正常的 SoloPy 缓存。构建中间文件保存在独立 `.build/build-*`，便于排错；不再每次递归清空整个 `.build`。
 
 性能脚本先用全新缓存测首次解压，再交替测量 `solopy.exe -c pass` 和**同一缓存内**的 Python 入口，报告中位数和范围。旧 README 中不同依赖、不同环境的 46 倍数据已移除；实际速度受运行时大小、磁盘和防病毒软件影响。
-
-仅在开发调试时可显式跳过回归：`build.bat --skip-tests --no-pause`。
 
 ## 运行时设计
 
@@ -118,7 +118,7 @@ solopy.exe = [ 原生 C 启动器 ] [ 确定性 runtime.zip ] [ 32 字节 v2 尾
 | 文件 | 职责 |
 | --- | --- |
 | `build.bat` / `build.ps1` | 校验启动器与 Python 下载、创建独立构建目录 |
-| `tools/build_runtime.py` | 锁定/安装依赖、运行测试、发布产物 |
+| `tools/build_runtime.py` | 解析/安装依赖、打包并发布产物 |
 | `tools/runtime_bundle.py` | 确定性 ZIP、文件清单、摘要与尾部 |
 | `tools/make_runtime_zip.ps1` | 封装脚本的 PowerShell 兼容入口 |
 | `tools/solopy_stub.c` | 缓存安装、诊断、CPython 原生入口 |
