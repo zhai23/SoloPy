@@ -1,0 +1,19 @@
+﻿{
+    "files":  {
+                  "python_host.exe":  "a99687e92700a621d10aee9585de0565446f7fcfcb0d4c5f86bd5a681631c2e4",
+                  "solopyw_stub.exe":  "beb69a3efc7c6baa4c867bc269ed7232bd768fecd2de592b09476f7fd6b13590",
+                  "solopy_stub.exe":  "dc1b4e3458e335874741ef6d0a63178f2f1e1990759ee3869f82433068eea924",
+                  "pythonw_host.exe":  "913dd231cbe9be67878b663ffbd758913b54b5ae1561d6dd209360a07b27100b"
+              },
+    "sources":  {
+                    "solopy_stub.c":  "78ec7cb0f6705c418bbe44352d07a1969d761594df3b2fe49bee8ea488b16cda",
+                    "launcher.manifest.xml":  "bf4fa226bb5697a40594141050ec1f8e2aca0678c52fd090303c2740e8a3f081",
+                    "build_stub.ps1":  "003f168adeade9fbe418599b72a990e84a6360e1bc4f73280eac1d86a6b11002",
+                    "vendor/miniz.h":  "295d1a0041aea09609598c0f1f35c1977ca05ad662acbadcfdaac44c140af37b",
+                    "solopy.ico":  "cbcd12b326cd9bc520884ae84d5cf10b93bf66aca38db42924f33a26cb50f428",
+                    "vendor/miniz.c":  "0fcdc9888cb3a29ca8f176bac087e5fe6c7258a6ab06b1c271c1e109a11d3740"
+                },
+    "format":  2,
+    "architecture":  "amd64",
+    "python_abi":  "3.12"
+}
